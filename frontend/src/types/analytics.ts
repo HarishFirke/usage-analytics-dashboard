@@ -11,6 +11,17 @@ export interface UsageEvent {
   value?: number;
 }
 
+export interface UsageTrend {
+  date: string;
+  events: number;
+}
+
+export interface UsageTrends {
+  // Company-keyed trends object
+  // Key: Company Name (camelCase), Value: Array of daily trends for that company
+  trends: { [companyName: string]: UsageTrend[] };
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -25,19 +36,10 @@ export interface UserActivity {
   companyName: string;
 }
 
-export interface UsageTrend {
-  date: string;
-  events: number;
-}
-
 export interface DashboardSummary {
   totalEvents: number;
   totalCompanies: number;
   peakUsageDay: string;
-}
-
-export interface UsageTrends {
-  daily: UsageTrend[];
 }
 
 export interface AnalyticsResponse {
@@ -48,9 +50,9 @@ export interface AnalyticsResponse {
 }
 
 export interface QueryParams {
-  dateRange: number;
-  companyId: string;
-  search: string;
+  search?: string;
   fromDate?: string;
   toDate?: string;
+  dateRange?: number;
+  companyId?: string;
 }

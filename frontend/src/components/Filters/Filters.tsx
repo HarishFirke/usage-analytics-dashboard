@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Search,
   Filter,
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { initialFilterValues } from "../Dashboard/Dashboard";
 
 interface FiltersProps {
   params: QueryParams;
@@ -159,13 +160,7 @@ const Filters: React.FC<FiltersProps> = ({
   const handleClearFilters = useCallback(() => {
     setDateError(null);
     setLocalSearch("");
-    onParamsChange({
-      search: "",
-      companyId: "all",
-      dateRange: 90,
-      fromDate: "",
-      toDate: "",
-    });
+    onParamsChange(initialFilterValues);
   }, [onParamsChange]);
 
   const toggleExpansion = () => setIsExpanded(!isExpanded);
@@ -182,12 +177,15 @@ const Filters: React.FC<FiltersProps> = ({
     previousAppliedParams.toDate !== params.toDate;
 
   // Check if any filter is currently active (different from defaults)
-  const hasActiveFilters =
-    params.search !== "" ||
-    params.companyId !== "all" ||
-    params.dateRange !== 90 ||
-    params.fromDate !== "" ||
-    params.toDate !== "";
+  const hasActiveFilters = useMemo(() => {
+    return (
+      params.search !== "" ||
+      params.companyId !== "all" ||
+      params.dateRange !== 90 ||
+      params.fromDate !== "" ||
+      params.toDate !== ""
+    );
+  }, [params]);
 
   // Validate dates when they change
   useEffect(() => {

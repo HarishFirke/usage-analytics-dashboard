@@ -73,11 +73,78 @@ func (s *AnalyticsService) getSummary(events []models.UsageEvent) models.Dashboa
 // getTrends generates usage trends data
 func (s *AnalyticsService) getTrends(events []models.UsageEvent, params models.QueryParams) models.UsageTrends {
 	if len(events) == 0 {
-		return models.UsageTrends{Daily: []models.UsageTrend{}}
+		return models.UsageTrends{Trends: make(map[string][]models.UsageTrend)}
 	}
 
-	dailyTrends := s.groupByDay(events, params)
-	return models.UsageTrends{Daily: dailyTrends}
+	// Create trends map
+	trends := make(map[string][]models.UsageTrend)
+
+	if params.CompanyID == "" {
+		// "All Companies" selected - generate trends for each company
+		companyTrends := s.groupByDayAndCompany(events, params)
+
+		// Group by company name
+		companyMap := make(map[string][]models.UsageTrend)
+		for _, trend := range companyTrends {
+			companyName := trend.CompanyName
+			if companyMap[companyName] == nil {
+				companyMap[companyName] = []models.UsageTrend{}
+			}
+			companyMap[companyName] = append(companyMap[companyName], models.UsageTrend{
+				Date:   trend.Date,
+				Events: trend.Events,
+			})
+		}
+
+		// Sort each company's trends by date and format company names as camelCase
+		for companyName, companyTrends := range companyMap {
+			sort.Slice(companyTrends, func(i, j int) bool {
+				return companyTrends[i].Date < companyTrends[j].Date
+			})
+			// Convert company name to camelCase for property name
+			camelCaseName := s.toCamelCase(companyName)
+			trends[camelCaseName] = companyTrends
+		}
+	} else {
+		// Specific company selected - generate trends for that company only
+		dailyTrends := s.groupByDay(events, params)
+
+		// Get company name for the selected company
+		companyName := s.extractCompanyName(params.CompanyID, events)
+		if companyName != "" {
+			// Convert company name to camelCase for property name
+			camelCaseName := s.toCamelCase(companyName)
+			trends[camelCaseName] = dailyTrends
+		}
+	}
+
+	return models.UsageTrends{Trends: trends}
+}
+
+// toCamelCase converts a company name to camelCase format
+// e.g., "Sample Company" -> "sampleCompany", "Facebook" -> "facebook"
+func (s *AnalyticsService) toCamelCase(name string) string {
+	if name == "" {
+		return name
+	}
+
+	// Split by spaces and convert to camelCase
+	words := strings.Fields(name)
+	if len(words) == 0 {
+		return name
+	}
+
+	// First word should be lowercase
+	result := strings.ToLower(words[0])
+
+	// Subsequent words should be capitalized
+	for i := 1; i < len(words); i++ {
+		if len(words[i]) > 0 {
+			result += strings.ToUpper(words[i][:1]) + strings.ToLower(words[i][1:])
+		}
+	}
+
+	return result
 }
 
 // getCompanyMetrics generates company analytics data
@@ -343,6 +410,94 @@ func (s *AnalyticsService) groupByDay(events []models.UsageEvent, params models.
 	return trends
 }
 
+// groupByDayAndCompany groups events by day and company for multiline chart
+func (s *AnalyticsService) groupByDayAndCompany(events []models.UsageEvent, params models.QueryParams) []models.CompanyTrend {
+	if len(events) == 0 {
+		return []models.CompanyTrend{}
+	}
+
+	// Get demo current date for demo purposes
+	demoCurrentDate := s.getDemoCurrentDate()
+
+	// Determine date range (same logic as groupByDay)
+	var fromDate, toDate time.Time
+
+	if params.FromDate != "" && params.ToDate != "" {
+		if from, err := time.Parse("2006-01-02", params.FromDate); err == nil {
+			fromDate = from
+		}
+		if to, err := time.Parse("2006-01-02", params.ToDate); err == nil {
+			toDate = to
+		}
+	} else if params.FromDate != "" {
+		if from, err := time.Parse("2006-01-02", params.FromDate); err == nil {
+			fromDate = from
+			toDate = demoCurrentDate
+		}
+	} else {
+		toDate = demoCurrentDate
+		fromDate = toDate.AddDate(0, 0, -params.DateRange+1)
+	}
+
+	if fromDate.IsZero() || toDate.IsZero() {
+		return []models.CompanyTrend{}
+	}
+
+	// Generate date range with zero-filling for each company
+	companyDateMap := make(map[string]map[string]int)
+	companyNames := make(map[string]string)
+
+	// Initialize all companies with zero counts for all dates
+	for _, event := range events {
+		companyID := event.CompanyID
+		if companyDateMap[companyID] == nil {
+			companyDateMap[companyID] = make(map[string]int)
+			companyNames[companyID] = s.extractCompanyName(companyID, events)
+
+			// Initialize all dates with zero
+			currentDate := fromDate
+			for currentDate.Before(toDate) || currentDate.Equal(toDate) {
+				dateStr := currentDate.Format("2006-01-02")
+				companyDateMap[companyID][dateStr] = 0
+				currentDate = currentDate.AddDate(0, 0, 1)
+			}
+		}
+	}
+
+	// Count events per day per company
+	for _, event := range events {
+		if (event.CreatedAt.After(fromDate) || event.CreatedAt.Equal(fromDate)) &&
+			(event.CreatedAt.Before(toDate) || event.CreatedAt.Equal(toDate)) {
+			dateStr := event.CreatedAt.Format("2006-01-02")
+			companyDateMap[event.CompanyID][dateStr]++
+		}
+	}
+
+	// Convert to slice
+	var trends []models.CompanyTrend
+	for companyID, dateMap := range companyDateMap {
+		companyName := companyNames[companyID]
+		for date, count := range dateMap {
+			trends = append(trends, models.CompanyTrend{
+				Date:        date,
+				CompanyID:   companyID,
+				CompanyName: companyName,
+				Events:      count,
+			})
+		}
+	}
+
+	// Sort by date, then by company name for consistent ordering
+	sort.Slice(trends, func(i, j int) bool {
+		if trends[i].Date != trends[j].Date {
+			return trends[i].Date < trends[j].Date
+		}
+		return trends[i].CompanyName < trends[j].CompanyName
+	})
+
+	return trends
+}
+
 // getDemoCurrentDate returns current date but with year 2025 for demo purposes
 func (s *AnalyticsService) getDemoCurrentDate() time.Time {
 	currentTime := time.Now()
@@ -373,11 +528,33 @@ func (s *AnalyticsService) extractCompanyName(companyID string, events []models.
 				parts := strings.Split(content, " - ")
 				if len(parts) >= 2 {
 					companyPart := parts[1]
-					// Remove email and path, keep company name
+
+					// Find the first email address (contains @) to determine where company name ends
+					emailIndex := strings.Index(companyPart, "@")
+					if emailIndex > 0 {
+						// Company name is everything before the email
+						// Find the last space before the @ symbol to get just the company name
+						companyNamePart := companyPart[:emailIndex]
+						lastSpaceIndex := strings.LastIndex(companyNamePart, " ")
+						if lastSpaceIndex > 0 {
+							// Take everything before the last space (which is the company name)
+							companyName := companyNamePart[:lastSpaceIndex]
+							// Trim any trailing spaces
+							companyName = strings.TrimSpace(companyName)
+							return companyName
+						} else {
+							// No space found, return the whole part before @
+							companyName := strings.TrimSpace(companyNamePart)
+							return companyName
+						}
+					}
+
+					// Fallback: if no email found, take everything before the first space
 					if strings.Contains(companyPart, " ") {
-						companyNameParts := strings.Split(companyPart, " ")
-						if len(companyNameParts) > 0 {
-							return companyNameParts[0]
+						spaceIndex := strings.Index(companyPart, " ")
+						if spaceIndex > 0 {
+							companyName := companyPart[:spaceIndex]
+							return companyName
 						}
 					}
 					return companyPart

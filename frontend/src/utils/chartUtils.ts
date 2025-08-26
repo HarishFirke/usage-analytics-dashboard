@@ -1,177 +1,170 @@
 import { UsageTrend } from "../types/analytics";
 
-/**
- * Aggregates daily data into weekly view
- * @param dailyData - Array of daily usage trends
- * @returns Array of weekly aggregated trends with date range labels
- */
-export const aggregateToWeekly = (
-  dailyData: UsageTrend[]
-): (UsageTrend & { startDate: string; endDate: string })[] => {
-  if (!dailyData || dailyData.length === 0) {
-    return [];
-  }
+// Aggregate daily data to weekly data
+export const aggregateToWeekly = (dailyData: UsageTrend[]) => {
+  if (dailyData.length === 0) return [];
 
-  const weeklyData: {
-    [key: string]: { events: number; startDate: string; endDate: string };
-  } = {};
+  const weeklyMap = new Map<string, { date: string; events: number }>();
 
   dailyData.forEach((trend) => {
     const date = new Date(trend.date);
-    if (isNaN(date.getTime())) return;
+    const weekStart = getWeekStart(date);
+    const weekKey = weekStart.toISOString().split("T")[0];
 
-    // Create week key in format: MMM DD - MMM DD (e.g., Jul 01 - Jul 07) for internal grouping
-    const year = date.getFullYear();
-    const startOfYear = new Date(year, 0, 1);
-    const days = Math.floor(
-      (date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000)
-    );
-    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-    const weekKey = `${year}-W${weekNumber < 10 ? "0" : ""}${weekNumber}`;
-
-    if (!weeklyData[weekKey]) {
-      weeklyData[weekKey] = {
-        events: 0,
-        startDate: trend.date,
-        endDate: trend.date,
-      };
-    } else {
-      weeklyData[weekKey].events += trend.events;
-      // Update start and end dates for the week
-      if (trend.date < weeklyData[weekKey].startDate) {
-        weeklyData[weekKey].startDate = trend.date;
-      }
-      if (trend.date > weeklyData[weekKey].endDate) {
-        weeklyData[weekKey].endDate = trend.date;
-      }
+    if (!weeklyMap.has(weekKey)) {
+      weeklyMap.set(weekKey, { date: weekKey, events: 0 });
     }
+
+    const weekData = weeklyMap.get(weekKey)!;
+    weekData.events += trend.events;
   });
 
-  // Convert to array and sort
-  return Object.keys(weeklyData)
-    .map((weekKey) => ({
-      date: weekKey,
-      events: weeklyData[weekKey].events,
-      startDate: weeklyData[weekKey].startDate,
-      endDate: weeklyData[weekKey].endDate,
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  return Array.from(weeklyMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
 };
 
-/**
- * Aggregates daily data into monthly view
- * @param dailyData - Array of daily usage trends
- * @returns Array of monthly aggregated trends
- */
-export const aggregateToMonthly = (dailyData: UsageTrend[]): UsageTrend[] => {
-  if (!dailyData || dailyData.length === 0) {
-    return [];
-  }
+// Aggregate daily data to monthly data
+export const aggregateToMonthly = (dailyData: UsageTrend[]) => {
+  if (dailyData.length === 0) return [];
 
-  const monthlyData: { [key: string]: number } = {};
+  const monthlyMap = new Map<string, { date: string; events: number }>();
 
   dailyData.forEach((trend) => {
     const date = new Date(trend.date);
-    if (isNaN(date.getTime())) return;
+    const monthKey = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}`;
 
-    // Create month key in format: YYYY-MM (e.g., 2025-05)
-    const monthKey = date.toISOString().slice(0, 7);
-    monthlyData[monthKey] = (monthlyData[monthKey] || 0) + trend.events;
+    if (!monthlyMap.has(monthKey)) {
+      monthlyMap.set(monthKey, { date: monthKey, events: 0 });
+    }
+
+    const monthData = monthlyMap.get(monthKey)!;
+    monthData.events += trend.events;
   });
 
-  // Convert to array and sort
-  return Object.keys(monthlyData)
-    .map((date) => ({ date, events: monthlyData[date] }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  return Array.from(monthlyMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
 };
 
-/**
- * Optimizes daily data for better chart display by reducing data points when necessary
- * @param dailyData - Array of daily usage trends
- * @param maxPoints - Maximum number of data points to display (default: 30)
- * @returns Optimized array of daily trends
- */
-export const optimizeDailyData = (
-  dailyData: UsageTrend[],
-  maxPoints: number = 30
-): UsageTrend[] => {
-  if (!dailyData || dailyData.length <= maxPoints) {
-    return dailyData;
+// Optimize daily data for chart display
+export const optimizeDailyData = (dailyData: UsageTrend[]) => {
+  if (dailyData.length === 0) return [];
+
+  // If we have too many data points, sample them for better readability
+  if (dailyData.length > 30) {
+    const step = Math.ceil(dailyData.length / 30);
+    return dailyData.filter((_, index) => index % step === 0);
   }
 
-  // If we have too many data points, sample them intelligently
-  const step = Math.ceil(dailyData.length / maxPoints);
-  const optimizedData: UsageTrend[] = [];
-
-  for (let i = 0; i < dailyData.length; i += step) {
-    optimizedData.push(dailyData[i]);
-  }
-
-  // Always include the last data point
-  if (
-    optimizedData[optimizedData.length - 1] !== dailyData[dailyData.length - 1]
-  ) {
-    optimizedData.push(dailyData[dailyData.length - 1]);
-  }
-
-  return optimizedData;
+  return dailyData;
 };
 
-/**
- * Formats date for display based on view mode
- * @param dateString - Date string to format
- * @param viewMode - Current view mode (daily, weekly, monthly)
- * @param startDate - Start date for weekly view
- * @param endDate - End date for weekly view
- * @returns Formatted date string
- */
+// Aggregate company trends to weekly data
+export const aggregateToWeeklyCompany = (companyTrends: {
+  [companyName: string]: UsageTrend[];
+}) => {
+  const weeklyMap = new Map<string, { date: string; [key: string]: any }>();
+
+  Object.entries(companyTrends).forEach(([companyName, trends]) => {
+    trends.forEach((trend) => {
+      const date = new Date(trend.date);
+      const weekStart = getWeekStart(date);
+      const weekKey = weekStart.toISOString().split("T")[0];
+
+      if (!weeklyMap.has(weekKey)) {
+        weeklyMap.set(weekKey, { date: weekKey });
+      }
+
+      const weekData = weeklyMap.get(weekKey)!;
+      if (!weekData[companyName]) {
+        weekData[companyName] = 0;
+      }
+      weekData[companyName] += trend.events;
+    });
+  });
+
+  return Array.from(weeklyMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+};
+
+// Aggregate company trends to monthly data
+export const aggregateToMonthlyCompany = (companyTrends: {
+  [companyName: string]: UsageTrend[];
+}) => {
+  const monthlyMap = new Map<string, { date: string; [key: string]: any }>();
+
+  Object.entries(companyTrends).forEach(([companyName, trends]) => {
+    trends.forEach((trend) => {
+      const date = new Date(trend.date);
+      const monthKey = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      if (!monthlyMap.has(monthKey)) {
+        monthlyMap.set(monthKey, { date: monthKey });
+      }
+
+      const monthData = monthlyMap.get(monthKey)!;
+      if (!monthData[companyName]) {
+        monthData[companyName] = 0;
+      }
+      monthData[companyName] += trend.events;
+    });
+  });
+
+  return Array.from(monthlyMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+};
+
+// Helper function to get week start
+const getWeekStart = (date: Date): Date => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+};
+
+// Format date for display
 export const formatDateForDisplay = (
   dateString: string,
-  viewMode: "daily" | "weekly" | "monthly",
-  startDate?: string,
-  endDate?: string
-): string => {
+  viewMode: "daily" | "weekly" | "monthly"
+) => {
   try {
-    if (viewMode === "daily") {
-      const date = new Date(dateString);
-      if (!isNaN(date.getTime())) {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+
+    switch (viewMode) {
+      case "daily":
         return date.toLocaleDateString("en-US", {
           month: "short",
-          day: "numeric",
+          day: "2-digit",
         });
-      }
-    } else if (viewMode === "weekly") {
-      // Format: "Jul 01 - Jul 07" using startDate and endDate from weekly data
-      if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-          const startFormatted = start.toLocaleDateString("en-US", {
-            month: "short",
-            day: "2-digit",
-          });
-          const endFormatted = end.toLocaleDateString("en-US", {
-            month: "short",
-            day: "2-digit",
-          });
-          return `${startFormatted} - ${endFormatted}`;
-        }
-      }
-      // Fallback to week key if date parsing fails
-      return dateString;
-    } else if (viewMode === "monthly") {
-      // Format: "May 2025", "Jun 2025", etc.
-      const date = new Date(dateString + "-01");
-      if (!isNaN(date.getTime())) {
+      case "weekly":
+        const endDate = new Date(date);
+        endDate.setDate(date.getDate() + 6);
+        const startStr = date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+        });
+        const endStr = endDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+        });
+        return `${startStr} - ${endStr}`;
+      case "monthly":
         return date.toLocaleDateString("en-US", {
           month: "short",
           year: "numeric",
         });
-      }
+      default:
+        return dateString;
     }
   } catch (error) {
-    // Fallback to original string if parsing fails
+    return dateString;
   }
-
-  return dateString;
 };

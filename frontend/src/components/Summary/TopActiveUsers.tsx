@@ -1,6 +1,6 @@
 import React from "react";
-import { Users, Trophy, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Trophy, TrendingUp, Users } from "lucide-react";
 import { UserActivity } from "../../types/analytics";
 
 interface TopActiveUsersProps {
@@ -14,23 +14,32 @@ const TopActiveUsers: React.FC<TopActiveUsersProps> = ({
 }) => {
   if (loading) {
     return (
-      <Card className="h-[500px]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center">
-            <Users className="h-5 w-5 mr-2" />
-            Top Active Users
+      <Card className="h-[400px] shadow-xl border border-gray-200/50 bg-gradient-to-br from-white to-gray-50/30">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-bold flex items-center text-gray-800">
+            <div className="w-7 h-7 mr-3 bg-blue-500 rounded-lg flex items-center justify-center">
+              <Users className="w-4 h-4 text-white" />
+            </div>
+            Top Users
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Users with highest event counts
+          </p>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="animate-pulse space-y-3">
+        <CardContent className="pt-0 px-4">
+          <div className="space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+              <div key={i} className="animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-32"></div>
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-12"></div>
                 </div>
-                <div className="h-6 w-12 bg-gray-200 rounded"></div>
               </div>
             ))}
           </div>
@@ -41,20 +50,20 @@ const TopActiveUsers: React.FC<TopActiveUsersProps> = ({
 
   if (!topUsers || topUsers.length === 0) {
     return (
-      <Card className="h-[290px] shadow-xl border border-gray-200/50 bg-gradient-to-br from-white to-gray-50/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-bold flex items-center text-gray-800">
-            <div className="w-5 h-5 mr-2 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Users className="h-3 w-3 text-white" />
+      <Card className="h-[520px] shadow-xl border border-gray-200/50 bg-gradient-to-br from-white to-gray-50/30">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-bold flex items-center text-gray-800">
+            <div className="w-7 h-7 mr-3 bg-blue-500 rounded-lg flex items-center justify-center">
+              <Users className="w-4 h-4 text-white" />
             </div>
             Top Users
           </CardTitle>
-          <p className="text-xs text-gray-500 font-medium">
+          <p className="text-sm text-muted-foreground">
             Users with highest event counts
           </p>
         </CardHeader>
-        <CardContent className="pt-0 px-4">
-          <div className="flex items-center justify-center h-[190px]">
+        <CardContent className="h-[410px] px-3 flex items-center justify-center">
+          <div className="flex items-center justify-center h-[280px]">
             <p className="text-muted-foreground text-center">
               No user activity data available
             </p>
@@ -64,63 +73,66 @@ const TopActiveUsers: React.FC<TopActiveUsersProps> = ({
     );
   }
 
-  // Get top 5 users
-  const top5Users = topUsers.slice(0, 5);
+  const top10Users = topUsers.slice(0, 10);
 
   return (
-    <Card className="h-[305px] shadow-xl border border-gray-200/50 bg-gradient-to-br from-white to-gray-50/30 hover:shadow-2xl transition-all duration-500">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-bold flex items-center text-gray-800">
-          <div className="w-5 h-5 mr-2 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Users className="h-3 w-3 text-white" />
+    <Card className="h-[520px] shadow-xl border border-gray-200/50 bg-gradient-to-br from-white to-gray-50/30 hover:shadow-2xl transition-all duration-500">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold flex items-center text-gray-800">
+          <div className="w-7 h-7 mr-3 bg-blue-500 rounded-lg flex items-center justify-center">
+            <Users className="w-4 h-4 text-white" />
           </div>
           Top Users
         </CardTitle>
-        <p className="text-xs text-gray-500 font-medium">
+        <p className="text-sm text-muted-foreground">
           Users with highest event counts
         </p>
       </CardHeader>
-      <CardContent className="pt-0 px-4">
-        <div className="space-y-1 max-h-[205px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          {top5Users.map((user, index) => (
+      <CardContent className="h-[480px] px-3 flex flex-col">
+        <div className="space-y-4 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          {top10Users.map((user, index) => (
             <div
               key={user.email}
-              className="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/30 transition-all duration-300 group cursor-pointer transform hover:scale-[1.02]"
+              className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition-all duration-200 group"
             >
-              <div className="flex items-center space-x-2 flex-1 min-w-0">
-                {/* Enhanced Rank Badge */}
-                <div
-                  className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold flex-shrink-0 shadow-md transition-all duration-300 group-hover:scale-110 ${
-                    index === 0
-                      ? "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white ring-2 ring-yellow-200"
-                      : index === 1
-                      ? "bg-gradient-to-br from-gray-400 to-gray-600 text-white ring-2 ring-gray-200"
-                      : index === 2
-                      ? "bg-gradient-to-br from-orange-400 to-orange-600 text-white ring-2 ring-orange-200"
-                      : "bg-gradient-to-br from-blue-400 to-blue-600 text-white ring-2 ring-blue-200"
-                  }`}
-                >
-                  {index === 0 ? <Trophy className="h-3 w-3" /> : index + 1}
+              <div className="flex items-center space-x-3">
+                {/* Rank indicator with improved styling */}
+                <div className="flex-shrink-0">
+                  {index === 0 ? (
+                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-md">
+                      <Trophy className="w-4 h-4 text-white" />
+                    </div>
+                  ) : (
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ${
+                        index === 1
+                          ? "bg-gradient-to-br from-gray-400 to-gray-600"
+                          : index === 2
+                          ? "bg-gradient-to-br from-orange-400 to-orange-600"
+                          : "bg-gradient-to-br from-blue-400 to-blue-600"
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+                  )}
                 </div>
 
-                {/* User Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-blue-700 transition-colors duration-300">
-                    {user.email}
+                {/* User information with improved typography */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-blue-600 transition-colors duration-200">
+                    {`${user.email.split("@")[0]}...`}
                   </p>
-                  <p className="text-xs text-gray-500 truncate font-medium group-hover:text-blue-600 transition-colors duration-300">
+                  <p className="text-xs text-gray-500 font-medium">
                     {user.companyName}
                   </p>
                 </div>
               </div>
 
-              {/* Enhanced Event Count */}
-              <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
-                <div className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
-                  <TrendingUp className="h-2 w-2 text-green-600" />
-                </div>
-                <span className="text-sm font-bold text-green-700 group-hover:text-green-800 transition-colors duration-300">
-                  {user.eventCount}
+              {/* Event count with improved styling */}
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                <TrendingUp className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                  {user.eventCount.toLocaleString()}
                 </span>
               </div>
             </div>

@@ -37,9 +37,19 @@ type UsageTrend struct {
 	Events int    `json:"events"`
 }
 
+// CompanyTrend represents company-specific daily usage trend data (used internally)
+type CompanyTrend struct {
+	Date        string `json:"date"`
+	CompanyID   string `json:"companyId"`
+	CompanyName string `json:"companyName"`
+	Events      int    `json:"events"`
+}
+
 // UsageTrends represents usage trends data
 type UsageTrends struct {
-	Daily []UsageTrend `json:"daily"`
+	// Company-keyed trends object
+	// Key: Company Name, Value: Array of daily trends for that company
+	Trends map[string][]UsageTrend `json:"trends"`
 }
 
 // DashboardSummary represents dashboard summary metrics
