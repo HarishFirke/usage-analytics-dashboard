@@ -9,6 +9,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { formatDateForDisplay } from "../../../utils/chartUtils";
+import { ViewMode } from "../../../utils/usageTrendsUtils";
 
 interface CommonBarChartProps {
   data: any[];
@@ -23,6 +25,7 @@ interface CommonBarChartProps {
     angle?: number;
     height?: number;
     fontSize?: number;
+    interval?: number;
     tickFormatter?: (value: any) => string;
   };
   yAxisConfig?: {
@@ -33,6 +36,8 @@ interface CommonBarChartProps {
   margin?: { top: number; right: number; left: number; bottom: number };
   barSize?: number;
   height?: string | number;
+  viewMode?: ViewMode;
+  useDateFormatting?: boolean;
 }
 
 const CommonBarChart: React.FC<CommonBarChartProps> = ({
@@ -46,12 +51,17 @@ const CommonBarChart: React.FC<CommonBarChartProps> = ({
   margin = { top: 20, right: 30, left: 20, bottom: 60 },
   barSize = 30,
   height = "100%",
+  viewMode = "daily",
+  useDateFormatting = false,
 }) => {
   const defaultXAxisConfig = {
     angle: -45,
     height: 60,
     fontSize: 10,
-    tickFormatter: (value: any) => value,
+    interval: useDateFormatting && viewMode === "daily" ? 2 : 0,
+    tickFormatter: useDateFormatting
+      ? (value: any) => formatDateForDisplay(value, viewMode)
+      : (value: any) => value,
     ...xAxisConfig,
   };
 
@@ -85,7 +95,7 @@ const CommonBarChart: React.FC<CommonBarChartProps> = ({
           fontSize={defaultXAxisConfig.fontSize}
           tickLine={false}
           axisLine={{ stroke: "#E5E7EB", strokeWidth: 1 }}
-          interval={0}
+          interval={defaultXAxisConfig.interval}
           minTickGap={15}
           angle={defaultXAxisConfig.angle}
           textAnchor="end"
@@ -100,7 +110,7 @@ const CommonBarChart: React.FC<CommonBarChartProps> = ({
           tickFormatter={defaultYAxisConfig.tickFormatter}
         />
         {tooltip && <Tooltip content={tooltip as any} />}
-        {bars.map((bar, index) => (
+        {bars.map((bar) => (
           <Bar
             key={bar.dataKey}
             dataKey={bar.dataKey}
