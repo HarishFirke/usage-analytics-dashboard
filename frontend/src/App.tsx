@@ -1,8 +1,13 @@
 import React from "react";
-import DashboardWrapper from "./components/Dashboard/DashboardWrapper";
+import { BrowserRouter as Router } from "react-router-dom";
+import AppRoutes from "./routes/AppRoutes";
 
 const App: React.FC = () => {
-  return <DashboardWrapper />;
+  return (
+    <Router>
+      <AppRoutes />
+    </Router>
+  );
 };
 
 export default App;

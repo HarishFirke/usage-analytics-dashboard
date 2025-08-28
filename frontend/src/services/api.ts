@@ -6,7 +6,9 @@ export interface ExportOptions {
   dateRange: string;
 }
 
-const API_BASE_URL = "http://localhost:8080/api";
+// Use environment variable with fallback to localhost
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 // Basic analytics API
 export const getAnalytics = async (
@@ -57,93 +59,4 @@ export const getAnalytics = async (
     console.error("Error fetching analytics:", error);
     throw error;
   }
-};
-
-// Get analytics insights and trends
-export const getAnalyticsInsights = async (
-  params: QueryParams
-): Promise<any> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/analytics/insights`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(params),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Insights failed: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Insights error:", error);
-    throw error;
-  }
-};
-
-// Export analytics data
-export const exportData = async (
-  params: QueryParams,
-  options: ExportOptions
-): Promise<Blob> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/analytics/export`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        params,
-        options,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Export failed: ${response.statusText}`);
-    }
-
-    return await response.blob();
-  } catch (error) {
-    console.error("Export error:", error);
-    throw error;
-  }
-};
-
-// Download data as CSV
-export const downloadCSV = (data: any[], filename: string): void => {
-  const csvContent = convertToCSV(data);
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${filename}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-};
-
-// Convert data to CSV format
-const convertToCSV = (data: any[]): string => {
-  if (data.length === 0) return "";
-
-  const headers = Object.keys(data[0]);
-  const csvRows = [headers.join(",")];
-
-  for (const row of data) {
-    const values = headers.map((header) => {
-      const value = row[header];
-      return typeof value === "string"
-        ? `"${value.replace(/"/g, '""')}"`
-        : value;
-    });
-    csvRows.push(values.join(","));
-  }
-
-  return csvRows.join("\n");
 };
