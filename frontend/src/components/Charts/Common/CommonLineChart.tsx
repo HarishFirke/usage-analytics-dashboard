@@ -70,7 +70,7 @@ const CommonLineChart: React.FC<CommonLineChartProps> = ({
     angle: -45,
     height: 60,
     fontSize: 10,
-    interval: viewMode === "daily" ? 2 : 0,
+    interval: viewMode === "daily" ? 1 : 0,
     tickFormatter: (value: any) => formatDateForDisplay(value, viewMode),
     ...xAxisConfig,
   };

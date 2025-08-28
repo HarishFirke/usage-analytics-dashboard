@@ -58,7 +58,7 @@ const CommonBarChart: React.FC<CommonBarChartProps> = ({
     angle: -45,
     height: 60,
     fontSize: 10,
-    interval: useDateFormatting && viewMode === "daily" ? 2 : 0,
+    interval: useDateFormatting && viewMode === "daily" ? 1 : 0,
     tickFormatter: useDateFormatting
       ? (value: any) => formatDateForDisplay(value, viewMode)
       : (value: any) => value,
