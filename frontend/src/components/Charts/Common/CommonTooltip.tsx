@@ -101,7 +101,7 @@ const CommonTooltip: React.FC<CommonTooltipProps> = ({
                   style={{ backgroundColor: entry.color || entry.fill }}
                 ></div>
                 <span className="text-sm text-gray-600">
-                  {entry.name === "events" ? "Events" : "Users"}:
+                  {entry.dataKey === "events" ? "Events" : "Users"}:
                 </span>
               </div>
               <span className="text-sm font-semibold text-gray-800">
